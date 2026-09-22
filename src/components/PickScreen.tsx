@@ -20,6 +20,7 @@ interface PickScreenProps {
 /** Shared card-grid picker used by both ChooseGuide and ChooseHero — exactly 2
  * cards each, guide chosen before hero. */
 export function PickScreen({
+  kind,
   title,
   subtitle,
   items,
@@ -30,7 +31,7 @@ export function PickScreen({
 }: PickScreenProps) {
   return (
     <>
-      <ScreenHead onBack={onBack} />
+      <ScreenHead title={kind === "guide" ? "Companion" : "Character"} onBack={onBack} />
       <div className="screen-scroll">
         <h2 className="screen-title" style={{ textAlign: "left" }}>{title}</h2>
         <p className="screen-sub" style={{ textAlign: "left", marginInline: 0, maxWidth: "none" }}>
@@ -50,21 +51,22 @@ export function PickScreen({
                 <span className="pick-ic pick-ic-photo">
                   {portrait && <img src={portrait} alt="" />}
                 </span>
-                <span className="pick-name">{item.name}</span>
+                {kind === "guide" && <span className="pick-name">{item.name}</span>}
                 <span className="pick-trait">{item.trait}</span>
               </button>
             );
           })}
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={selected == null}
-          style={{ width: "100%", marginTop: 16 }}
-          onClick={onAdvance}
-        >
-          Continue
-        </button>
+        <div className="screen-footer">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={selected == null}
+            onClick={onAdvance}
+          >
+            Continue
+          </button>
+        </div>
       </div>
     </>
   );

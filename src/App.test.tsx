@@ -65,16 +65,10 @@ describe("App: onboarding through the Trail Map to Final (real component wiring)
       fireEvent.change(screen.getByPlaceholderText("Your name"), { target: { value: "Rae" } });
       await clickButton("Continue");
 
-      // ChooseGuide
-      const guideHeading = await screen.findByText("Choose your guide");
-      const guideEl = guideHeading.closest(".screen-scroll") as HTMLElement;
-      const guideScope = within(guideEl);
-      await waitFor(() => expect(guideScope.getAllByRole("button")).toHaveLength(3)); // 2 picks + Continue
-      fireEvent.click(guideEl.querySelectorAll(".pick")[0]);
-      await waitFor(() => expect(guideScope.getByText("Continue")).not.toBeDisabled());
-      fireEvent.click(guideScope.getByText("Continue"));
-
-      // StoryIntro
+      // StoryIntro (guide selection has been removed — Focus Buddy is the fixed, default guide)
+      // — split into two sub-steps: the greeting (with a quiet "Next" link),
+      // then the what's-next info with the real "Let's begin" CTA.
+      await clickButton("Next");
       await clickButton("Let's begin");
 
       // ChooseHero
@@ -125,7 +119,7 @@ describe("App: onboarding through the Trail Map to Final (real component wiring)
           if (document.querySelector(".overlay-scrim")) break;
           const opt = await waitForOpt();
           if (!opt) break;
-          const prevText = document.querySelector(".q-text")?.textContent ?? null;
+          const prevText = document.querySelector(".q-ask-bubble")?.textContent ?? null;
           fireEvent.click(opt);
           const cta = await waitFor(() => {
             const el = document.querySelector<HTMLButtonElement>(".q-footer .btn-primary");
@@ -140,7 +134,7 @@ describe("App: onboarding through the Trail Map to Final (real component wiring)
           // immediately would click through it again. Wait for the screen to
           // actually change (new question text, or celebration/overlay) first.
           await waitFor(() => {
-            const stillSame = document.querySelector(".q-text")?.textContent === prevText;
+            const stillSame = document.querySelector(".q-ask-bubble")?.textContent === prevText;
             const overlayUp = document.querySelector(".overlay-scrim") != null;
             const noMoreOpts = document.querySelector(".opt") == null;
             expect(stillSame && !overlayUp && !noMoreOpts).toBe(false);
@@ -202,13 +196,7 @@ describe("App: Trail Map drawer interaction", () => {
     fireEvent.change(screen.getByPlaceholderText("Your name"), { target: { value: "Rae" } });
     await clickButton("Continue");
 
-    const guideHeading = await screen.findByText("Choose your guide");
-    const guideEl = guideHeading.closest(".screen-scroll") as HTMLElement;
-    await waitFor(() => expect(within(guideEl).getAllByRole("button")).toHaveLength(3));
-    fireEvent.click(guideEl.querySelectorAll(".pick")[0]);
-    await waitFor(() => expect(within(guideEl).getByText("Continue")).not.toBeDisabled());
-    fireEvent.click(within(guideEl).getByText("Continue"));
-
+    await clickButton("Next");
     await clickButton("Let's begin");
 
     const heroHeading = await screen.findByText("Choose your character");
@@ -222,60 +210,53 @@ describe("App: Trail Map drawer interaction", () => {
     await waitFor(() => expect(trailNodes()).toHaveLength(D.chapters.length));
   }
 
-  it("tapping a locked node does not open the drawer", async () => {
+  it("tapping a locked node does not open the chapter-intro modal", async () => {
     await getToTrailMap();
     expect(trailNodes()[1].className).toContain("trail-node-locked");
     fireEvent.click(trailNodes()[1]);
-    expect(document.querySelector(".drawer-sheet")).toBeNull();
+    expect(document.querySelector(".chapter-modal")).toBeNull();
     // Trail Map is untouched — still the only thing on screen.
     expect(trailNodes()).toHaveLength(D.chapters.length);
   });
 
-  it("tapping the current node opens the drawer over a dimmed Trail Map, showing that chapter's intro then its first question", async () => {
+  it("tapping the current node opens a centered chapter-intro modal (no back/close button) over a dimmed Trail Map, and Continue swaps it for a FULL SCREEN question (not a modal)", async () => {
     await getToTrailMap();
     expect(trailNodes()[0].className).toContain("trail-node-current");
 
     fireEvent.click(trailNodes()[0]);
     expect(await screen.findByText(D.chapters[0].stop)).toBeInTheDocument();
-    expect(document.querySelector(".drawer-scrim")).not.toBeNull();
-    expect(document.querySelector(".drawer-sheet")).not.toBeNull();
-    // Trail Map stays mounted (dimmed) behind the drawer, not replaced.
+    expect(document.querySelector(".chapter-modal-scrim")).not.toBeNull();
+    expect(document.querySelector(".chapter-modal")).not.toBeNull();
+    // No back or close button anywhere in the modal.
+    expect(document.querySelector(".chapter-modal")!.querySelector("button.back-btn")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    // Trail Map stays mounted (dimmed) behind the modal, not replaced.
     expect(trailNodes()).toHaveLength(D.chapters.length);
 
     await clickButton("Continue");
+    // The modal is gone; the question renders full screen instead.
+    await waitFor(() => expect(document.querySelector(".chapter-modal")).toBeNull());
     const opt = await waitFor(() => {
-      const el = document.querySelector<HTMLButtonElement>(".drawer-sheet .opt");
+      const el = document.querySelector<HTMLButtonElement>(".question-fullscreen .opt");
       expect(el).not.toBeNull();
       return el!;
     });
     expect(opt).toBeInTheDocument();
   });
 
-  it("closing the drawer (X button) returns to the Trail Map without marking the chapter done", async () => {
+  it("tapping the scrim on the chapter-intro modal closes it without marking the chapter done", async () => {
     await getToTrailMap();
     fireEvent.click(trailNodes()[0]);
-    await clickButton("Continue");
-    await waitFor(() => expect(document.querySelector(".drawer-sheet .opt")).not.toBeNull());
+    await screen.findByText(D.chapters[0].stop);
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    await waitFor(() => expect(document.querySelector(".drawer-sheet")).toBeNull());
+    fireEvent.click(document.querySelector(".chapter-modal-scrim")!);
+    await waitFor(() => expect(document.querySelector(".chapter-modal")).toBeNull());
     expect(trailNodes()[0].className).toContain("trail-node-current");
     expect(trailNodes()[0].className).not.toContain("trail-node-done");
   });
 
-  it("tapping the scrim closes the drawer without marking the chapter done", async () => {
-    await getToTrailMap();
-    fireEvent.click(trailNodes()[0]);
-    await clickButton("Continue");
-    await waitFor(() => expect(document.querySelector(".drawer-sheet .opt")).not.toBeNull());
-
-    fireEvent.click(document.querySelector(".drawer-scrim")!);
-    await waitFor(() => expect(document.querySelector(".drawer-sheet")).toBeNull());
-    expect(trailNodes()[0].className).toContain("trail-node-current");
-  });
-
   it(
-    "answering through the drawer closes it, runs the celebration, and returns to an updated Trail Map",
+    "answering through the full-screen question flow runs the celebration and returns to an updated Trail Map",
     async () => {
       await getToTrailMap();
       fireEvent.click(trailNodes()[0]);
@@ -287,7 +268,7 @@ describe("App: Trail Map drawer interaction", () => {
         if (document.querySelector(".overlay-scrim")) break;
         const opt = await waitFor(
           () => {
-            const el = document.querySelector<HTMLButtonElement>(".drawer-sheet .opt");
+            const el = document.querySelector<HTMLButtonElement>(".question-fullscreen .opt");
             if (!el) throw new Error("no option yet");
             return el;
           },
@@ -296,7 +277,7 @@ describe("App: Trail Map drawer interaction", () => {
         if (!opt) break;
         fireEvent.click(opt);
         const cta = await waitFor(() => {
-          const el = document.querySelector<HTMLButtonElement>(".drawer-sheet .q-footer .btn-primary");
+          const el = document.querySelector<HTMLButtonElement>(".question-fullscreen .q-footer .btn-primary");
           expect(el).not.toBeNull();
           expect(el!.disabled).toBe(false);
           return el!;
@@ -304,19 +285,21 @@ describe("App: Trail Map drawer interaction", () => {
         fireEvent.click(cta);
         await waitFor(() => {
           const overlayUp = document.querySelector(".overlay-scrim") != null;
-          const drawerGone = document.querySelector(".drawer-sheet") == null;
-          expect(overlayUp || drawerGone || document.querySelector(".drawer-sheet .opt") != null).toBe(
+          const gone = document.querySelector(".question-fullscreen") == null;
+          expect(overlayUp || gone || document.querySelector(".question-fullscreen .opt") != null).toBe(
             true,
           );
         });
       }
 
-      // Drawer closes and the celebration overlay runs...
+      // The full-screen question flow closes and the celebration overlay runs...
       await screen.findByText(new RegExp(`${D.chapters[0].title} complete`));
-      // The drawer's own exit spring animation takes a beat to finish and
-      // unmount in jsdom, so allow a little slack here (unlike the overlay
-      // check below, this isn't racing against a real 1400ms feature timer).
-      await waitFor(() => expect(document.querySelector(".drawer-sheet")).toBeNull(), { timeout: 2000 });
+      // The exit spring animation takes a beat to finish and unmount in
+      // jsdom, so allow a little slack here (unlike the overlay check below,
+      // this isn't racing against a real 1400ms feature timer).
+      await waitFor(() => expect(document.querySelector(".question-fullscreen")).toBeNull(), {
+        timeout: 2000,
+      });
 
       // ...then auto-dismisses back to the Trail Map, with chapter 0 now done.
       await waitFor(() => expect(document.querySelector(".overlay-scrim")).toBeNull(), { timeout: 4000 });

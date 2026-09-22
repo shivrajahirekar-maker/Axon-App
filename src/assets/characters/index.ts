@@ -1,12 +1,10 @@
-import kitty from "./kitty.webp";
-import doggo from "./doggo.webp";
+import focusBuddy from "./focusbuddy.webp";
 import sam from "./sam.webp";
 import mickey from "./mickey.webp";
 
-/** Portrait art used on the "choose your guide" / "choose your character" pick screens. */
+/** Portrait art for the default guide (Focus Buddy) and the "choose your character" pick screen. */
 export const CHARACTER_PORTRAIT: Record<string, string> = {
-  Kitty: kitty,
-  Doggo: doggo,
+  "Focus Buddy": focusBuddy,
   Sam: sam,
   Mickey: mickey,
 };

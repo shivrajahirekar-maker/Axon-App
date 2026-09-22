@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Signal, Wifi, BatteryFull } from "lucide-react";
 
 interface PhoneShellProps {
   children: ReactNode;
@@ -14,8 +15,12 @@ export function PhoneShell({ children, pastelBg, onRestart }: PhoneShellProps) {
         <div className="notch" aria-hidden="true" />
         <div className="phone-screen" style={pastelBg ? { background: pastelBg } : undefined}>
           <div className="statusbar" aria-hidden="true">
-            <span>9:41</span>
-            <span className="icons">●●●&nbsp;&nbsp;▂▄▆</span>
+            <span className="statusbar-time">9:41</span>
+            <span className="statusbar-icons">
+              <Signal size={15} strokeWidth={2.2} />
+              <Wifi size={15} strokeWidth={2.2} />
+              <BatteryFull size={20} strokeWidth={2} />
+            </span>
           </div>
           <div className="screens">
             <div className="screen-viewport">{children}</div>

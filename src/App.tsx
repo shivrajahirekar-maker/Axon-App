@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useDragControls } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { PhoneShell } from "./components/PhoneShell";
 import { Splash } from "./components/Splash";
 import { Auth } from "./components/Auth";
 import { Consent } from "./components/Consent";
 import { NameScreen } from "./components/NameScreen";
 import { StoryIntro } from "./components/StoryIntro";
-import { ChooseGuide } from "./components/ChooseGuide";
 import { ChooseHero } from "./components/ChooseHero";
 import { Prologue } from "./components/Prologue";
 import { TrailMap } from "./components/TrailMap";
@@ -15,7 +14,6 @@ import { QuestionScreen } from "./components/QuestionScreen";
 import { ChapterCelebration } from "./components/ChapterCelebration";
 import { PlanLoader } from "./components/PlanLoader";
 import { Final } from "./components/Final";
-import { IconClose } from "./icons/icons";
 import {
   createInitialState,
   computeNext,
@@ -54,11 +52,13 @@ function App() {
   const [stack, setStack] = useState<Screen[]>([{ type: "splash" }]);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [drawer, setDrawer] = useState<Drawer | null>(null);
-  const drawerDragControls = useDragControls();
 
   const top = stack[stack.length - 1];
   const drawerTop = drawer ? drawer.stack[drawer.stack.length - 1] : null;
-  const heroName = flow.hero != null ? D.chars[flow.hero].name : "your character";
+  // The character is picked by image only (no character names shown anywhere
+  // in the UI) — every {hero} reference in the app's copy uses the player's
+  // own entered name instead of a fictional character name.
+  const heroName = flow.name.trim() || "your character";
   const guideName = flow.guide != null ? D.guides[flow.guide].name : "your guide";
 
   // Drives the transient, un-pushed overlay sequence: chapter-complete
@@ -222,15 +222,6 @@ function App() {
             <StoryIntro name={flow.name} guideName={guideName} onBack={back} onAdvance={advance} />
           )}
 
-          {top.type === "chooseGuide" && (
-            <ChooseGuide
-              selected={flow.guide}
-              onSelect={(i) => setFlow((f) => ({ ...f, guide: i }))}
-              onBack={back}
-              onAdvance={advance}
-            />
-          )}
-
           {top.type === "chooseHero" && (
             <ChooseHero
               guideName={guideName}
@@ -242,13 +233,7 @@ function App() {
           )}
 
           {top.type === "prologue" && flow.guide != null && (
-            <Prologue
-              heroName={heroName}
-              guideName={guideName}
-              guideGreet={D.guides[flow.guide].greet}
-              onBack={back}
-              onAdvance={advance}
-            />
+            <Prologue guideName={guideName} onBack={back} onAdvance={advance} />
           )}
 
           {top.type === "trailMap" && (
@@ -263,90 +248,67 @@ function App() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Bottom-drawer: a chapter's intro + questions, opened from a Trail Map
-          node tap. Slides up over the (dimmed) Trail Map instead of pushing a
-          new full screen. */}
+      {/* Chapter intro: a small CENTERED modal opened from a Trail Map node
+          tap — no back/close chrome, dismiss only by tapping the scrim. */}
       <AnimatePresence>
-        {drawer && (
+        {drawer && drawerTop?.type === "chapterIntro" && (
           <motion.div
-            key="drawer-scrim"
-            className="drawer-scrim"
+            key="chapter-modal-scrim"
+            className="chapter-modal-scrim"
             onClick={closeDrawer}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-          />
+          >
+            <motion.div
+              className="chapter-modal"
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            >
+              <ChapterIntro
+                chapter={D.chapters[drawerTop.idx]}
+                idx={drawerTop.idx}
+                heroName={heroName}
+                guideName={guideName}
+                onAdvance={drawerAdvance}
+              />
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
-      <AnimatePresence>
-        {drawer && drawerTop && (
-          <motion.div
-            key="drawer-sheet"
-            className="drawer-sheet"
-            drag="y"
-            dragControls={drawerDragControls}
-            dragListener={false}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={(_e, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 600) closeDrawer();
-            }}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 320, damping: 34 }}
-          >
-            <div
-              className="drawer-handle-row"
-              onPointerDown={(e) => drawerDragControls.start(e)}
-            >
-              <span className="drawer-handle" aria-hidden="true" />
-              <button type="button" className="drawer-close" aria-label="Close" onClick={closeDrawer}>
-                <IconClose />
-              </button>
-            </div>
-            <div className="drawer-content" style={{ background: "var(--color-bg)" }}>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={screenKey(drawerTop)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  style={{ height: "100%", display: "flex", flexDirection: "column" }}
-                >
-                  {drawerTop.type === "chapterIntro" && (
-                    <ChapterIntro
-                      chapter={D.chapters[drawerTop.idx]}
-                      idx={drawerTop.idx}
-                      heroName={heroName}
-                      guideName={guideName}
-                      onBack={drawerBack}
-                      onAdvance={drawerAdvance}
-                    />
-                  )}
 
-                  {drawerTop.type === "question" &&
-                    (() => {
-                      const q = byId[drawerTop.id];
-                      return (
-                        <QuestionScreen
-                          question={q}
-                          answer={flow.answers[drawerTop.id]}
-                          heroName={heroName}
-                          guideName={guideName}
-                          onTapOption={(i, isAll) =>
-                            q.multi ? answerMulti(drawerTop.id, i, isAll) : answerSingle(drawerTop.id, i)
-                          }
-                          onBack={drawerBack}
-                          onAdvance={drawerAdvance}
-                        />
-                      );
-                    })()}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+      {/* Chapter questions: a FULL SCREEN takeover (not a modal), reached
+          after "Continue" on the chapter-intro modal. */}
+      <AnimatePresence mode="wait">
+        {drawer && drawerTop?.type === "question" && (
+          <motion.div
+            key={screenKey(drawerTop)}
+            className="question-fullscreen"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            {(() => {
+              const q = byId[drawerTop.id];
+              return (
+                <QuestionScreen
+                  question={q}
+                  answer={flow.answers[drawerTop.id]}
+                  heroName={heroName}
+                  guideName={guideName}
+                  onTapOption={(i, isAll) =>
+                    q.multi ? answerMulti(drawerTop.id, i, isAll) : answerSingle(drawerTop.id, i)
+                  }
+                  onBack={drawerBack}
+                  onAdvance={drawerAdvance}
+                />
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>

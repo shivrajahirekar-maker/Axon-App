@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { ScreenHead } from "./ScreenHead";
-import { ANIMAL_ICON, IconGuideGeneric, IconCheck } from "../icons/icons";
+import { ChevronLeft, Check } from "lucide-react";
+import { ANIMAL_ICON, IconGuideGeneric } from "../icons/icons";
+import { CHARACTER_PORTRAIT } from "../assets/characters";
 import { fillText, hashStr, REACTIONS } from "../lib/text";
 import { D, chapterOf } from "../data/questionnaire";
 import type { QuestionDef } from "../data/questionnaire";
-import placeholderImg from "../assets/placeholder.webp";
 
 interface QuestionScreenProps {
   question: QuestionDef;
@@ -30,6 +30,7 @@ export function QuestionScreen({
   const ci = chapterOf[q.id];
   const chapter = D.chapters[ci];
   const GuideIcon = ANIMAL_ICON[guideName] || IconGuideGeneric;
+  const guidePortrait = CHARACTER_PORTRAIT[guideName];
 
   const answered = q.multi ? Array.isArray(answer) && answer.length > 0 : answer != null;
   const selectedIndices: number[] = q.multi
@@ -47,18 +48,23 @@ export function QuestionScreen({
 
   return (
     <>
-      <ScreenHead onBack={onBack} />
+      <div className="q-head-row">
+        <button type="button" className="back-btn" aria-label="Back" onClick={onBack}>
+          <ChevronLeft size={20} strokeWidth={2.25} />
+        </button>
+        <span className="q-eyebrow">{chapter.title}</span>
+      </div>
       <div className="qwrap">
-        <div className="q-eyebrow">{chapter.title}</div>
-        <div className="illus" aria-hidden="true">
-          <img src={placeholderImg} alt="" />
+        <div className="q-ask-row">
+          <span className="q-ask-avatar">
+            {guidePortrait ? <img src={guidePortrait} alt="" /> : <GuideIcon />}
+          </span>
+          <div className="q-ask-bubble">{fillText(q.text, heroName, guideName)}</div>
         </div>
-        <div className="q-text">{fillText(q.text, heroName, guideName)}</div>
         {q.multi && <p className="q-hint">Select all that apply.</p>}
         <div className="opt-col">
           {q.opts.map((o, i) => {
             const sel = selectedIndices.includes(i);
-            const dim = selectedIndices.length > 0 && !sel && !q.multi;
             return (
               <motion.button
                 key={i}
@@ -67,13 +73,12 @@ export function QuestionScreen({
                   "opt" +
                   (q.multi ? " multi" : "") +
                   (o.all ? " opt-all" : "") +
-                  (sel ? " sel" : "") +
-                  (dim ? " dim" : "")
+                  (sel ? " sel" : "")
                 }
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onTapOption(i, Boolean(o.all))}
               >
-                <span className="dot">{sel && <IconCheck />}</span>
+                <span className="dot">{sel && <Check size={12} strokeWidth={3} />}</span>
                 <span>{fillText(o.t, heroName, guideName)}</span>
               </motion.button>
             );
@@ -84,7 +89,7 @@ export function QuestionScreen({
           {reactionText && (
             <div className="q-reaction">
               <span className="ic">
-                <GuideIcon />
+                {guidePortrait ? <img src={guidePortrait} alt="" /> : <GuideIcon />}
               </span>
               <p>
                 {guideName}: {reactionText}

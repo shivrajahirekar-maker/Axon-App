@@ -21,7 +21,7 @@ export interface FlowState {
 export function createInitialState(): FlowState {
   return {
     hero: null,
-    guide: null,
+    guide: 0, // Focus Buddy — the only guide, fixed, never chosen by the user.
     name: "",
     fullname: "",
     email: "",
@@ -36,7 +36,6 @@ export type Screen =
   | { type: "consent" }
   | { type: "name" }
   | { type: "storyIntro" }
-  | { type: "chooseGuide" }
   | { type: "chooseHero" }
   | { type: "prologue" }
   | { type: "trailMap" }
@@ -44,12 +43,13 @@ export type Screen =
   | { type: "question"; id: string }
   | { type: "final" };
 
+// There is only one guide (Focus Buddy) — it's fixed, never chosen, so there is
+// no "chooseGuide" step in the flow at all.
 export const ORDER: Screen["type"][] = [
   "splash",
   "auth",
   "consent",
   "name",
-  "chooseGuide",
   "storyIntro",
   "chooseHero",
   "prologue",

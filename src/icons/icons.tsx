@@ -270,6 +270,4 @@ export const CHAPTER_ICON: Record<string, (props: IconProps) => ReactElement> = 
 export const ANIMAL_ICON: Record<string, (props: IconProps) => ReactElement> = {
   Sam: IconTurtle,
   Mickey: IconHamster,
-  Kitty: IconCat,
-  Doggo: IconDog,
 };

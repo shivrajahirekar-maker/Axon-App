@@ -11,14 +11,9 @@
   ],
   "guides": [
     {
-      "name": "Kitty",
-      "trait": "A calm cat, unhurried and easy to sit with",
-      "greet": "Hello. I’m Kitty. Let’s take this slowly."
-    },
-    {
-      "name": "Doggo",
-      "trait": "A warm dog, encouraging and always close by",
-      "greet": "Hello. I’m Doggo. Let’s walk this together."
+      "name": "Focus Buddy",
+      "trait": "A curious little owl, encouraging and always close by",
+      "greet": "Hello. I’m Focus Buddy. Let’s walk this together."
     }
   ],
   "chapters": [

@@ -13,6 +13,8 @@
   --color-cta-text: #2B2013;
   --color-border: #ECE0C8;
   --color-accent-orange: #E8935B;
+  --color-progress: #4F9C74;
+  --color-header-bg: #F4EAD6;
 
   --pastel-1-bg: #FBE4E4; --pastel-1-accent: #C4676B;
   --pastel-2-bg: #E1F3E8; --pastel-2-accent: #4F9C74;
@@ -36,6 +38,10 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* Scrolling stays fully functional everywhere; the scrollbar itself is just
+   never drawn, throughout the app. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 html, body { height: 100%; margin: 0; }
 body {
   background: #E9E2D3;
@@ -63,8 +69,13 @@ button { font-family: inherit; }
 }
 .phone-screen { position: relative; width: 100%; height: 100%; background: var(--color-bg); border-radius: 36px; overflow: hidden; }
 .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 130px; height: 26px; background: #12100C; border-radius: 0 0 16px 16px; z-index: 50; }
-.statusbar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; font-size: 12px; font-weight: 500; color: var(--color-ink); flex: none; }
-.statusbar .icons { display: flex; gap: 5px; align-items: center; opacity: .8; }
+.statusbar {
+  height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px;
+  flex: none; color: var(--color-ink); background: var(--color-header-bg);
+}
+.statusbar-time { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.statusbar-icons { display: flex; gap: 6px; align-items: center; color: var(--color-ink); }
+.statusbar-icons svg { display: block; }
 .screens { position: relative; height: calc(100% - 44px); }
 .screen-viewport { height: 100%; display: flex; flex-direction: column; }
 
@@ -75,15 +86,39 @@ button { font-family: inherit; }
 .restart-btn:hover { border-color: var(--color-accent-orange); color: var(--color-ink); }
 
 /* ---------- generic layout ---------- */
-.screen-head { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 14px 4px; min-height: 34px; }
-.back-btn {
-  width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-surface);
-  display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-ink); flex: none;
+/* A consistent, slightly-darker-than-page header band across every screen —
+   replaces the old floating white cards with one shared, subtle tint. */
+.screen-head {
+  flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 22px;
+  min-height: 34px; background: var(--color-header-bg); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
+.back-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-ink-soft); flex: none;
+  transition: background .15s ease, color .15s ease;
+}
+.back-btn:hover, .back-btn:active { background: rgba(43,32,19,0.06); color: var(--color-ink); }
 .back-btn[hidden] { visibility: hidden; }
-.back-btn svg { width: 16px; height: 16px; }
+.back-btn svg { width: 18px; height: 18px; }
+.screen-head-title { font-size: 14px; font-weight: 700; color: var(--color-ink); }
+.screen-head-right { margin-left: auto; display: flex; align-items: center; }
 
-.screen-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 22px 22px; }
+.screen-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 22px 22px; display: flex; flex-direction: column; }
+/* Pins its contents (primary CTA button, plus any small link under it) to the
+   bottom of the screen, centered — the same pattern QuestionScreen's
+   .q-footer already used, now shared by every screen. */
+.screen-footer { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.screen-footer .btn-primary { width: 100%; }
+/* A secondary, non-CTA "Next" step — right-aligned at the bottom, sized
+   larger than a quiet text link but visually lighter than the primary CTA. */
+.screen-footer-right { margin-top: auto; padding-top: 16px; display: flex; justify-content: flex-end; }
+.btn-next-secondary {
+  font: inherit; font-size: 16px; font-weight: 600; color: var(--color-ink); background: var(--color-surface);
+  border: 1.5px solid var(--color-border); border-radius: var(--radius-full); padding: 13px 22px;
+  display: flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.btn-next-secondary:hover { border-color: var(--color-accent-orange); box-shadow: var(--shadow-md); }
 .center-col {
   flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: stretch;
   padding: 26px 26px 34px; gap: 14px; text-align: center;
@@ -168,8 +203,11 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
   text-align: left; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);
   padding: 14px 16px; display: flex; flex-direction: column; gap: 9px;
 }
-.consent-list li { font-size: 13px; color: var(--color-ink-soft); list-style: none; padding-left: 18px; position: relative; }
-.consent-list li::before { content: "\2713"; position: absolute; left: 0; color: var(--color-accent-orange); font-weight: 700; font-size: 12px; }
+.consent-list li {
+  font-size: 13px; color: var(--color-ink-soft); list-style: none;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.consent-list li svg { flex: none; margin-top: 3px; color: var(--color-accent-orange); }
 .check-row { display: flex; gap: 10px; align-items: flex-start; text-align: left; font-size: 12.5px; color: var(--color-ink-soft); padding: 10px 2px; }
 .check-row input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--color-accent-orange); flex: none; }
 .check-row em { display: block; font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--color-ink-muted); text-transform: uppercase; letter-spacing: .03em; margin-top: 1px; }
@@ -180,6 +218,8 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
   margin-bottom: 14px; display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
 .illus img { width: 46%; height: 46%; object-fit: contain; opacity: .85; }
+.illus-portrait { background: var(--pastel-4-bg); }
+.illus-portrait img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; opacity: 1; }
 
 /* ---------- pick cards (guide/hero) ---------- */
 .pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
@@ -207,33 +247,73 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
 .story-text { font-size: 14px; color: var(--color-ink); line-height: 1.5; }
 .story-quote { font-size: 12.5px; color: var(--color-ink-muted); font-style: italic; }
 
+/* ---------- talking bubble (StoryIntro): guide speaks directly, tail points down at their portrait ---------- */
+.talk-bubble {
+  position: relative; background: var(--color-surface); border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: 18px 18px 22px; box-shadow: var(--shadow-sm); text-align: left;
+}
+.talk-bubble-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 8px; text-align: center; }
+.talk-bubble-quote { font-size: 13px; color: var(--color-ink-muted); font-style: italic; margin: 0 0 10px; text-align: center; }
+.talk-bubble-text { font-size: 14px; color: var(--color-ink); line-height: 1.5; margin: 0 0 10px; }
+.talk-bubble-text:last-child { margin-bottom: 0; }
+.talk-bubble::after {
+  content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%) rotate(45deg);
+  width: 16px; height: 16px; background: var(--color-surface);
+  border-right: 1.5px solid var(--color-border); border-bottom: 1.5px solid var(--color-border);
+  border-radius: 0 0 3px 0;
+}
+.talk-bubble-portrait { margin: 30px auto 0; width: 78%; max-width: 220px; }
+.talk-bubble-portrait img { width: 100%; height: auto; display: block; object-fit: contain; }
+
 /* ---------- question screen ---------- */
+.q-head-row {
+  flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 22px;
+  min-height: 34px; background: var(--color-header-bg); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
 .qwrap { display: flex; flex-direction: column; gap: 2px; padding: 6px 22px 22px; flex: 1; min-height: 0; overflow-y: auto; }
-.q-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--color-ink-muted); }
-.q-text { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; margin: 4px 0 14px; }
+.q-eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--color-accent-orange); }
 .q-hint { font-size: 12px; color: var(--color-ink-muted); margin: -8px 0 12px; }
+
+/* Guide asking the question, Duolingo-style: avatar + speech bubble. */
+.q-ask-row { display: flex; align-items: flex-start; gap: 10px; margin: 8px 0 16px; }
+.q-ask-avatar {
+  width: 52px; height: 52px; border-radius: 50%; flex: none; overflow: hidden;
+  background: var(--pastel-2-bg); display: flex; align-items: center; justify-content: center;
+}
+.q-ask-avatar img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+.q-ask-avatar svg { width: 28px; height: 28px; color: var(--pastel-2-accent); }
+.q-ask-bubble {
+  position: relative; flex: 1; background: transparent; border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: 12px 14px; font-size: 16px; font-weight: 700;
+  letter-spacing: -0.01em; line-height: 1.35; color: var(--color-ink); margin-top: 4px;
+}
+.q-ask-bubble::before {
+  content: ""; position: absolute; left: -6px; top: 16px; width: 12px; height: 12px;
+  background: var(--color-bg); border-left: 1.5px solid var(--color-border); border-bottom: 1.5px solid var(--color-border);
+  transform: rotate(45deg); border-radius: 0 0 0 3px;
+}
 .opt-col { display: flex; flex-direction: column; gap: 9px; }
 .opt {
   text-align: left; font: inherit; font-size: 14px; font-weight: 500; color: var(--color-ink); padding: 13px 15px;
   border-radius: var(--radius-lg); border: 1.5px solid var(--color-border); background: var(--color-surface); cursor: pointer;
-  display: flex; align-items: center; gap: 10px; transition: border-color .15s, background .15s, opacity .15s;
+  display: flex; align-items: center; gap: 10px; transition: border-color .15s, background .15s, opacity .15s, box-shadow .15s;
 }
-.opt:hover { border-color: var(--color-accent-orange); }
+.opt:hover { border-color: var(--color-accent-orange); box-shadow: var(--shadow-xs); }
 .opt .dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border); flex: none; display: flex; align-items: center; justify-content: center; }
 .opt.multi .dot { border-radius: 6px; }
 .opt .dot svg { width: 10px; height: 10px; opacity: 0; color: #fff; }
 .opt.sel { border-color: var(--color-accent-orange); background: var(--pastel-5-bg); }
 .opt.sel .dot { background: var(--color-accent-orange); border-color: var(--color-accent-orange); }
 .opt.sel .dot svg { opacity: 1; }
-.opt.dim { opacity: .6; }
 .opt.opt-all { border-style: dashed; }
 .q-note { font-size: 11.5px; color: var(--color-ink-muted); margin-top: 10px; }
 .q-reaction {
   display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; padding: 11px 13px; background: var(--color-surface-warm);
   border-radius: var(--radius-md); border: 1px solid var(--color-border);
 }
-.q-reaction .ic { width: 24px; height: 24px; border-radius: 7px; background: var(--pastel-4-bg); display: flex; align-items: center; justify-content: center; flex: none; }
+.q-reaction .ic { width: 24px; height: 24px; border-radius: 7px; background: var(--pastel-4-bg); display: flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
 .q-reaction .ic svg { width: 13px; height: 13px; color: var(--pastel-4-accent); }
+.q-reaction .ic img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
 .q-reaction p { margin: 0; font-size: 12.5px; color: var(--color-ink-soft); font-style: italic; }
 .q-footer { margin-top: auto; padding-top: 16px; }
 .q-footer .btn-primary { width: 100%; }
@@ -255,12 +335,12 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
 
 /* ---------- trail map (hub) ---------- */
 .trailmap-screen { height: 100%; display: flex; flex-direction: column; }
-.trailmap-header {
-  flex: none; display: flex; flex-direction: column; gap: 2px; margin: 2px 22px 10px;
-  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
-  padding: 10px 14px;
+.trailmap-header-row {
+  flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 22px;
+  background: var(--color-header-bg); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
-.trailmap-header-eyebrow { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--color-ink-muted); }
+.trailmap-header { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.trailmap-header-eyebrow { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--color-ink-soft); }
 .trailmap-header-title { font-size: 15px; font-weight: 700; color: var(--color-ink); }
 .trailmap-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0 28px; }
 .trailmap-path-wrap { position: relative; width: 100%; }
@@ -272,11 +352,15 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
 .trail-node {
   width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
-  transition: box-shadow .15s ease;
+  transition: box-shadow .15s ease; position: relative;
 }
 .trail-node svg { width: 26px; height: 26px; }
-.trail-node-portrait { width: 55%; height: 55%; object-fit: contain; opacity: .9; }
 .trail-node-locked { cursor: not-allowed; box-shadow: none; }
+.trail-node-lock-badge {
+  position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-header-bg); color: var(--color-ink-muted);
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-xs);
+}
 .trail-node-current { box-shadow: var(--shadow-md), 0 0 0 5px rgba(246,196,69,0.35); animation: trail-pulse 1.8s ease-in-out infinite; }
 .trail-node-done { box-shadow: var(--shadow-sm); }
 .trail-node-label { font-size: 11px; font-weight: 600; color: var(--color-ink-soft); text-align: center; line-height: 1.25; }
@@ -292,33 +376,27 @@ p.screen-sub { font-size: 13.5px; color: var(--color-ink-soft); margin: 0 0 4px;
 }
 .trail-node-shake { animation: node-shake .4s; }
 
-/* ---------- chapter drawer (bottom sheet) ---------- */
-.drawer-scrim {
+/* ---------- chapter intro: centered modal (no back/close chrome) ---------- */
+.chapter-modal-scrim {
   position: absolute; inset: 0; z-index: 60; background: rgba(43,32,19,0.4);
+  display: flex; align-items: center; justify-content: center; padding: 22px;
 }
-.drawer-sheet {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 61;
-  height: 90%; max-height: 92%;
-  background: var(--color-surface);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: var(--shadow-lg);
-  display: flex; flex-direction: column; overflow: hidden;
+.chapter-modal {
+  width: 100%; max-height: 88%; overflow: hidden;
+  background: var(--color-surface); border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg); padding: 26px 22px 22px;
+  display: flex; flex-direction: column;
 }
-.drawer-handle-row {
-  flex: none; position: relative; display: flex; align-items: center; justify-content: center;
-  padding: 10px 14px 6px; cursor: grab; touch-action: none;
-}
-.drawer-handle {
-  width: 38px; height: 4px; border-radius: var(--radius-full); background: var(--color-border);
-}
-.drawer-close {
-  position: absolute; right: 10px; top: 6px; width: 30px; height: 30px; border-radius: 50%;
-  border: none; background: var(--color-surface-warm); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--color-ink-soft); box-shadow: var(--shadow-xs);
-}
-.drawer-close svg { width: 15px; height: 15px; }
-.drawer-content {
-  flex: 1; min-height: 0; display: flex; flex-direction: column;
+/* Smaller than the full-screen talk-bubble portrait (StoryIntro/Prologue) —
+   the modal has much less vertical room, so the companion art is scaled
+   down to guarantee everything fits without scrolling. */
+.chapter-modal .talk-bubble-portrait { margin: 16px auto 0; width: 46%; max-width: 120px; }
+.chapter-modal .screen-footer { padding-top: 14px; }
+
+/* ---------- chapter questions: full-screen takeover, not a modal ---------- */
+.question-fullscreen {
+  position: absolute; inset: 0; z-index: 60; background: var(--color-bg);
+  display: flex; flex-direction: column;
 }
 
 /* ---------- chapter-complete / plan overlays ---------- */

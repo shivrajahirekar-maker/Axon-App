@@ -11,28 +11,31 @@ export function NameScreen({ name, onBack, onAdvance }: NameScreenProps) {
   const [val, setVal] = useState(name);
   return (
     <>
-      <ScreenHead onBack={onBack} />
-      <div className="center-col">
-        <h2 className="screen-title">What should we call you?</h2>
-        <p className="screen-sub">Just a first name is fine.</p>
-        <div className="field" style={{ marginTop: 6 }}>
-          <input
-            type="text"
-            placeholder="Your name"
-            value={val}
-            autoComplete="given-name"
-            onChange={(e) => setVal(e.target.value)}
-          />
+      <ScreenHead title="Your Name" onBack={onBack} />
+      <div className="screen-scroll" style={{ textAlign: "center" }}>
+        <div style={{ margin: "auto 0" }}>
+          <h2 className="screen-title">What should we call you?</h2>
+          <p className="screen-sub">Just a first name is fine.</p>
+          <div className="field" style={{ marginTop: 6 }}>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={val}
+              autoComplete="given-name"
+              onChange={(e) => setVal(e.target.value)}
+            />
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!val.trim()}
-          onClick={() => onAdvance(val.trim())}
-          style={{ marginTop: 6 }}
-        >
-          Continue
-        </button>
+        <div className="screen-footer">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!val.trim()}
+            onClick={() => onAdvance(val.trim())}
+          >
+            Continue
+          </button>
+        </div>
       </div>
     </>
   );

@@ -17,8 +17,8 @@ import {
 import { D, byId, chapterOf } from "../data/questionnaire";
 
 describe("questionnaire data shape (sanity)", () => {
-  it("has exactly 2 guides: Kitty and Doggo", () => {
-    expect(D.guides.map((g) => g.name).sort()).toEqual(["Doggo", "Kitty"]);
+  it("has exactly 1 fixed guide: Focus Buddy", () => {
+    expect(D.guides.map((g) => g.name)).toEqual(["Focus Buddy"]);
   });
   it("has exactly 2 characters: Sam and Mickey", () => {
     expect(D.chars.map((c) => c.name).sort()).toEqual(["Mickey", "Sam"]);
@@ -51,12 +51,10 @@ describe("splash -> auth screen reachability", () => {
   });
 });
 
-describe("guide chosen before hero", () => {
-  it("chooseGuide precedes storyIntro and chooseHero in the fixed ORDER screens", () => {
+describe("guide is fixed (no chooseGuide step); character is still chosen", () => {
+  it("name leads straight to storyIntro, then chooseHero — there is no chooseGuide screen", () => {
     let top: Screen = { type: "name" };
     const answers: Answers = {};
-    top = computeNext(top, answers)!; // chooseGuide
-    expect(top).toEqual({ type: "chooseGuide" });
     top = computeNext(top, answers)!; // storyIntro
     expect(top).toEqual({ type: "storyIntro" });
     top = computeNext(top, answers)!; // chooseHero
@@ -233,7 +231,6 @@ describe("no real Skip anywhere in the onboarding flow", () => {
       "consent",
       "name",
       "storyIntro",
-      "chooseGuide",
       "chooseHero",
       "prologue",
       "chapterIntro",
@@ -251,10 +248,10 @@ describe("goBack / restart", () => {
     expect(goBack([{ type: "splash" }])).toEqual([{ type: "splash" }]);
   });
 
-  it("createInitialState resets hero/guide/name/answers", () => {
+  it("createInitialState resets hero/name/answers, and fixes guide to Focus Buddy (index 0)", () => {
     const s = createInitialState();
     expect(s.hero).toBeNull();
-    expect(s.guide).toBeNull();
+    expect(s.guide).toBe(0);
     expect(s.name).toBe("");
     expect(s.answers).toEqual({});
   });

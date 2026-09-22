@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { IconCheck } from "../icons/icons";
+import { Check } from "lucide-react";
 
 interface ChapterCelebrationProps {
   chapterTitle: string;
@@ -29,7 +29,7 @@ export function ChapterCelebration({ chapterTitle }: ChapterCelebrationProps) {
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 380, damping: 14, delay: 0.05 }}
         >
-          <IconCheck />
+          <Check size={30} strokeWidth={3} />
         </motion.div>
         <p className="celebrate-text">
           Nice work! {chapterTitle} complete.

@@ -1,11 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ScreenHead } from "./ScreenHead";
-import { pastelFor } from "./ChapterIntro";
-import { IconCheck, IconLock } from "../icons/icons";
-import placeholderImg from "../assets/placeholder.webp";
+import {
+  ChevronLeft,
+  Check,
+  Lock,
+  Crosshair,
+  Zap,
+  Rocket,
+  Heart,
+  Sun,
+  Sparkles,
+  Repeat,
+  Footprints,
+  type LucideIcon,
+} from "lucide-react";
 import { D } from "../data/questionnaire";
 import type { NodeStatus } from "../lib/flowEngine";
+
+/** One relevant lucide icon per chapter category — shown on its locked node
+ * instead of a generic padlock, so each category reads as itself even
+ * before it unlocks. */
+const CHAPTER_ICON: Record<string, LucideIcon> = {
+  focus: Crosshair,
+  energy: Zap,
+  starting: Rocket,
+  feelings: Heart,
+  daily: Sun,
+  wellbeing: Sparkles,
+  habits: Repeat,
+  firststeps: Footprints,
+};
 
 interface TrailMapProps {
   statuses: NodeStatus[];
@@ -39,17 +63,37 @@ export function TrailMap({ statuses, onBack, onSelectChapter }: TrailMapProps) {
   const headerChapter = D.chapters[headerIdx];
 
   // i = 0 (chapter 1) gets the LARGEST y (bottom of the trail); the last
-  // chapter gets the smallest y (top). The winding x-offset is unchanged.
+  // chapter gets the smallest y (top). The x-offset steps through a fixed
+  // 4-step cycle (center, right, center, left, ...) so every consecutive
+  // node moves by exactly AMP horizontally — combined with the constant
+  // ROW_H vertical step, this keeps the node-to-node distance perfectly
+  // even instead of varying like a smooth sine wave would.
+  const SIDE = [0, 1, 0, -1];
   const lastIdx = D.chapters.length - 1;
   const positions = D.chapters.map((_, i) => ({
-    x: 50 + AMP * Math.sin((i * Math.PI) / 1.85),
+    x: 50 + AMP * SIDE[i % SIDE.length],
     y: TOP_PAD + (lastIdx - i) * ROW_H,
   }));
   const totalHeight = TOP_PAD + lastIdx * ROW_H + BOTTOM_PAD;
 
-  // Path is drawn following chapter order (0..last), which now naturally
-  // climbs from the bottom of the SVG to the top.
-  const pathD = positions.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  // Path is drawn as individual curved segments (one per consecutive node
+  // pair) rather than a single straight stroke, so each segment can be
+  // colored on its own: a segment is "walked" (solid progress green) once
+  // its lower chapter is done, and stays the default dashed gray otherwise.
+  // Each curve is a rounded L: it leaves the lower node travelling straight
+  // UP (control point shares the lower node's x), then bends to arrive at
+  // the upper node travelling straight SIDEWAYS, level with that node's own
+  // center (control point shares the upper node's y). Arriving level (not
+  // from below) means the curve never dips into the label sitting directly
+  // under the upper node — it only crosses that x-column well above the
+  // label, and it never dwells at the lower node's x below y0 either.
+  const segments = positions.slice(0, -1).map((p, i) => {
+    const next = positions[i + 1];
+    return {
+      d: `M ${p.x} ${p.y} Q ${p.x} ${next.y} ${next.x} ${next.y}`,
+      walked: statuses[i] === "done",
+    };
+  });
 
   // Auto-center the current node in the scroll viewport whenever the Trail
   // Map mounts, or whenever which node is "current" changes (e.g. returning
@@ -71,12 +115,16 @@ export function TrailMap({ statuses, onBack, onSelectChapter }: TrailMapProps) {
 
   return (
     <div className="trailmap-screen">
-      <ScreenHead onBack={onBack} showBack />
-      <div className="trailmap-header">
-        <span className="trailmap-header-eyebrow">
-          Chapter {headerIdx + 1} of {D.chapters.length}
-        </span>
-        <span className="trailmap-header-title">{headerChapter.title}</span>
+      <div className="trailmap-header-row">
+        <button type="button" className="back-btn" aria-label="Back" onClick={onBack}>
+          <ChevronLeft size={20} strokeWidth={2.25} />
+        </button>
+        <div className="trailmap-header">
+          <span className="trailmap-header-eyebrow">
+            Chapter {headerIdx + 1} of {D.chapters.length}
+          </span>
+          <span className="trailmap-header-title">{headerChapter.title}</span>
+        </div>
       </div>
       <motion.div
         className="trailmap-scroll"
@@ -92,23 +140,26 @@ export function TrailMap({ statuses, onBack, onSelectChapter }: TrailMapProps) {
             preserveAspectRatio="none"
             aria-hidden="true"
           >
-            <path
-              d={pathD}
-              fill="none"
-              stroke="var(--color-border)"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeDasharray="0.5 7"
-              vectorEffect="non-scaling-stroke"
-            />
+            {segments.map((seg, i) => (
+              <path
+                key={i}
+                d={seg.d}
+                fill="none"
+                stroke={seg.walked ? "var(--color-progress)" : "var(--color-border)"}
+                strokeWidth={seg.walked ? "2" : "1.6"}
+                strokeLinecap="round"
+                strokeDasharray={seg.walked ? undefined : "0.5 7"}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
           </svg>
           {D.chapters.map((chapter, i) => {
             const status = statuses[i];
-            const pastel = pastelFor(i);
             const pos = positions[i];
+            const CategoryIcon = CHAPTER_ICON[chapter.key];
             const nodeStyle: Record<string, string> =
               status === "done"
-                ? { background: pastel.accent, color: "#fff" }
+                ? { background: "var(--color-progress)", color: "#fff" }
                 : status === "current"
                   ? { background: "var(--color-cta)", color: "var(--color-cta-text)" }
                   : { background: "var(--color-border)", color: "var(--color-ink-muted)" };
@@ -140,10 +191,17 @@ export function TrailMap({ statuses, onBack, onSelectChapter }: TrailMapProps) {
                   transition={{ type: "spring", stiffness: 320, damping: 16 }}
                   whileTap={status !== "locked" ? { scale: 0.94 } : undefined}
                 >
-                  {status === "locked" && <IconLock />}
-                  {status === "done" && <IconCheck />}
-                  {status === "current" && (
-                    <img className="trail-node-portrait" src={placeholderImg} alt="" />
+                  {status === "locked" && (
+                    <>
+                      {CategoryIcon && <CategoryIcon size={24} strokeWidth={1.8} />}
+                      <span className="trail-node-lock-badge" aria-hidden="true">
+                        <Lock size={11} strokeWidth={2.5} />
+                      </span>
+                    </>
+                  )}
+                  {status === "done" && <Check size={26} strokeWidth={2.5} />}
+                  {status === "current" && CategoryIcon && (
+                    <CategoryIcon size={28} strokeWidth={2} />
                   )}
                 </motion.button>
                 <span className="trail-node-label">{chapter.title}</span>

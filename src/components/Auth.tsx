@@ -1,11 +1,6 @@
 import { useState } from "react";
-import {
-  IconEye,
-  IconEyeOff,
-  IconFacebook,
-  IconLinkedIn,
-  IconGoogle,
-} from "../icons/icons";
+import { Eye, EyeOff } from "lucide-react";
+import { IconFacebook, IconLinkedIn, IconGoogle } from "../icons/icons";
 
 export interface AuthResult {
   fullname: string;
@@ -85,7 +80,7 @@ export function Auth({ authMode, onToggleMode, onSignUpSuccess }: AuthProps) {
                 aria-label={showPass ? "Hide password" : "Show password"}
                 onClick={() => setShowPass((v) => !v)}
               >
-                {showPass ? <IconEyeOff /> : <IconEye />}
+                {showPass ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
               </button>
             )}
             {!isUp && (
@@ -113,7 +108,7 @@ export function Auth({ authMode, onToggleMode, onSignUpSuccess }: AuthProps) {
                 aria-label={showConfirm ? "Hide password" : "Show password"}
                 onClick={() => setShowConfirm((v) => !v)}
               >
-                {showConfirm ? <IconEyeOff /> : <IconEye />}
+                {showConfirm ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
               </button>
             </div>
           )}
